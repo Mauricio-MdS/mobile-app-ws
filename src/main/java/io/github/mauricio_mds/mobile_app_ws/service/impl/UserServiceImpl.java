@@ -1,10 +1,12 @@
 package io.github.mauricio_mds.mobile_app_ws.service.impl;
 
 import io.github.mauricio_mds.mobile_app_ws.UserRepository;
+import io.github.mauricio_mds.mobile_app_ws.exceptions.UserServiceException;
 import io.github.mauricio_mds.mobile_app_ws.io.entity.UserEntity;
 import io.github.mauricio_mds.mobile_app_ws.service.UserService;
 import io.github.mauricio_mds.mobile_app_ws.shared.Utils;
 import io.github.mauricio_mds.mobile_app_ws.shared.dto.UserDto;
+import io.github.mauricio_mds.mobile_app_ws.ui.model.response.ErrorMessages;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
@@ -47,6 +49,31 @@ public class UserServiceImpl implements UserService {
         UserDto userDto = new UserDto();
         BeanUtils.copyProperties(userEntity, userDto);
         return userDto;
+    }
+
+    @Override
+    public UserDto getUserByUserId(String userId) {
+        UserDto userDto = new UserDto();
+        UserEntity userEntity =  userRepository.findByUserId(userId);
+        if (userEntity == null) throw new UsernameNotFoundException(userId);
+
+        BeanUtils.copyProperties(userEntity, userDto);
+        return userDto;
+    }
+
+    @Override
+    public UserDto updateUser(String userId, UserDto userDto) {
+        UserDto returnedUser = new UserDto();
+        UserEntity userEntity =  userRepository.findByUserId(userId);
+        if (userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getErrorMessage());
+
+        userEntity.setFirstName(userDto.getFirstName());
+        userEntity.setLastName(userDto.getLastName());
+
+        UserEntity updatedUser = userRepository.save(userEntity);
+        BeanUtils.copyProperties(updatedUser, returnedUser);
+
+        return returnedUser;
     }
 
     @Override

@@ -42,6 +42,9 @@ public class WebSecurity {
                 .addFilter(authenticationFilter)
                 .addFilter(new AuthorizationFilter(authenticationManager))
                 .sessionManagement(configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(configurer ->
+                        configurer.authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(response.getStatus())))
                 .build();
     }
 }
