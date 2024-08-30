@@ -9,6 +9,9 @@ import io.github.mauricio_mds.mobile_app_ws.shared.dto.UserDto;
 import io.github.mauricio_mds.mobile_app_ws.ui.model.response.ErrorMessages;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,6 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -55,7 +59,7 @@ public class UserServiceImpl implements UserService {
     public UserDto getUserByUserId(String userId) {
         UserDto userDto = new UserDto();
         UserEntity userEntity =  userRepository.findByUserId(userId);
-        if (userEntity == null) throw new UsernameNotFoundException(userId);
+        if (userEntity == null) throw new UsernameNotFoundException("User with id " + userId + " not found.");
 
         BeanUtils.copyProperties(userEntity, userDto);
         return userDto;
@@ -74,6 +78,31 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(updatedUser, returnedUser);
 
         return returnedUser;
+    }
+
+    @Override
+    public void deleteUser(String userId) {
+        UserEntity userEntity =  userRepository.findByUserId(userId);
+        if (userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getErrorMessage());
+
+        userRepository.delete(userEntity);
+    }
+
+    @Override
+    public List<UserDto> getUsers(int page, int limit) {
+        if (page > 0) page--;
+        List<UserDto> userDtos = new ArrayList<>();
+        Pageable pageableRequest = PageRequest.of(page, limit);
+        Page<UserEntity> usersPage = userRepository.findAll(pageableRequest);
+        List<UserEntity> users = usersPage.getContent();
+
+        for(UserEntity user : users) {
+            UserDto userDto = new UserDto();
+            BeanUtils.copyProperties(user, userDto);
+            userDtos.add(userDto);
+        }
+
+        return userDtos;
     }
 
     @Override

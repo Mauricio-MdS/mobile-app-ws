@@ -5,11 +5,16 @@ import io.github.mauricio_mds.mobile_app_ws.service.UserService;
 import io.github.mauricio_mds.mobile_app_ws.shared.dto.UserDto;
 import io.github.mauricio_mds.mobile_app_ws.ui.model.request.UserDetailsRequestModel;
 import io.github.mauricio_mds.mobile_app_ws.ui.model.response.ErrorMessages;
+import io.github.mauricio_mds.mobile_app_ws.ui.model.response.OperationStatusModel;
+import io.github.mauricio_mds.mobile_app_ws.ui.model.response.RequestOperationStatus;
 import io.github.mauricio_mds.mobile_app_ws.ui.model.response.UserRest;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("users")
@@ -55,8 +60,27 @@ public class UserController {
         return userRest;
     }
 
-    @DeleteMapping
-    public String deleteUser() {
-        return "delete user was called";
+    @DeleteMapping(path = "/{id}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public OperationStatusModel deleteUser(@PathVariable String id) {
+        OperationStatusModel statusModel = new OperationStatusModel();
+        statusModel.setOperationName(RequestOperationName.DELETE.name());
+        userService.deleteUser(id);
+        statusModel.setOperationResult(RequestOperationStatus.SUCCESS.name());
+        return statusModel;
+    }
+
+    @GetMapping(produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+    public List<UserRest> getUsers(@RequestParam(value = "page", defaultValue = "1") int page,
+                                   @RequestParam(value="limit", defaultValue = "25") int limit) {
+        List<UserRest> usersRest = new ArrayList<>();
+        List<UserDto> users = userService.getUsers(page, limit);
+
+        for (UserDto userDto : users) {
+            UserRest userRest = new UserRest();
+            BeanUtils.copyProperties(userDto, userRest);
+            usersRest.add(userRest);
+        }
+
+        return usersRest;
     }
 }
