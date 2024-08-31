@@ -9,6 +9,7 @@ import io.github.mauricio_mds.mobile_app_ws.shared.dto.AddressDTO;
 import io.github.mauricio_mds.mobile_app_ws.shared.dto.UserDto;
 import io.github.mauricio_mds.mobile_app_ws.ui.model.response.ErrorMessages;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,9 +57,9 @@ public class UserServiceImpl implements UserService {
     public UserDto getUser(String email) {
         UserEntity userEntity = userRepository.findByEmail(email);
         if (userEntity == null) throw new UsernameNotFoundException(email);
-
-        ModelMapper mapper = new ModelMapper();
-        return mapper.map(userEntity, UserDto.class);
+        UserDto userDto = new UserDto();
+        BeanUtils.copyProperties(userEntity, userDto);
+        return userDto;
     }
 
     @Override

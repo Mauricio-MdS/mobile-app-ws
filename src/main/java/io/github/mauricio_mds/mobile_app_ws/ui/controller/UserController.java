@@ -10,11 +10,16 @@ import io.github.mauricio_mds.mobile_app_ws.ui.model.response.*;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -82,23 +87,41 @@ public class UserController {
 
     @GetMapping(path = "/{id}/addresses",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-    public List<AddressRest> getUserAddresses(@PathVariable String id) {
+    public CollectionModel<AddressRest> getUserAddresses(@PathVariable String id) {
+        List<AddressRest> addressesRest = new ArrayList<>();
         List<AddressDTO> addressesDTO = addressService.getAddresses(id);
-        if (addressesDTO == null || addressesDTO.isEmpty()) return new ArrayList<>();
-
-        ModelMapper mapper = new ModelMapper();
-        Type listType = new TypeToken<List<AddressRest>>() {}.getType();
-        return mapper.map(addressesDTO, listType);
-
+        if (addressesDTO != null && !addressesDTO.isEmpty()) {
+            Type listType = new TypeToken<List<AddressRest>>() {}.getType();
+            addressesRest = new ModelMapper().map(addressesDTO, listType);
+            for (AddressRest addressRest : addressesRest) {
+                Link selfLink = WebMvcLinkBuilder
+                        .linkTo(WebMvcLinkBuilder.methodOn(UserController.class)
+                                .getUserAddress(id, addressRest.getAddressId()))
+                        .withSelfRel();
+                addressRest.add(selfLink);
+            }
+        }
+        Link userLink = WebMvcLinkBuilder.linkTo(UserController.class).slash(id).withRel("user");
+        Link selfLink = WebMvcLinkBuilder
+                .linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserAddresses(id))
+                .withSelfRel();
+        return CollectionModel.of(addressesRest, userLink, selfLink);
     }
 
     @GetMapping(path = "/{userId}/addresses/{addressId}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-    public AddressRest getUserAddress(@PathVariable String addressId) {
+    public EntityModel<AddressRest> getUserAddress(@PathVariable String userId, @PathVariable String addressId) {
         AddressDTO addressDTO = addressService.getAddress(addressId);
-
-        return new ModelMapper().map(addressDTO, AddressRest.class);
-
+        ModelMapper mapper = new ModelMapper();
+        AddressRest addressRest = mapper.map(addressDTO, AddressRest.class);
+        Link userLink = WebMvcLinkBuilder.linkTo(UserController.class).slash(userId).withRel("user");
+        Link userAddressesLink = WebMvcLinkBuilder
+                .linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserAddresses(userId))
+                .withRel("addresses");
+        Link selfLink = WebMvcLinkBuilder
+                .linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserAddress(userId, addressId))
+                .withSelfRel();
+        return EntityModel.of(addressRest, Arrays.asList(userLink, userAddressesLink, selfLink));
     }
 
 }
