@@ -1,4 +1,4 @@
-package io.github.mauricio_mds.mobile_app_ws;
+package io.github.mauricio_mds.mobile_app_ws.io.repository;
 
 import io.github.mauricio_mds.mobile_app_ws.io.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
